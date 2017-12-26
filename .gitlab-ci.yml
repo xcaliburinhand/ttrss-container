@@ -26,8 +26,11 @@ Build Container:
   tags:
     - build
   script:
+    - mkdir -p /tmp/ttrss
+    - git clone --depth 1 https://tt-rss.org/gitlab/fox/tt-rss.git /tmp/ttrss/html
+    - cp ${CI_PROJECT_DIR}/ttrss* /tmp/ttrss/
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY_IMAGE
-    - docker build -t $CI_REGISTRY_IMAGE -f ${CI_PROJECT_DIR}/ttrss ${CI_PROJECT_DIR}
+    - docker build -t $CI_REGISTRY_IMAGE -f /tmp/ttrss/ttrss /tmp/ttrss
     - docker push $CI_REGISTRY_IMAGE
     - docker rmi $(docker images -f "dangling=true" -q)
 Deploy Spare Containers:
