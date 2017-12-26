@@ -22,6 +22,7 @@ Build Container:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY_IMAGE
     - docker build -t $CI_REGISTRY_IMAGE -f /tmp/ttrss/ttrss /tmp/ttrss
     - docker push $CI_REGISTRY_IMAGE
+    - rm -rf /tmp/ttrss
     - docker rmi $(docker images -f "dangling=true" -q)
 Deploy Containers:
   stage: deploy_main
