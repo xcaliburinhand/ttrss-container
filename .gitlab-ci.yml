@@ -4,7 +4,7 @@ stages:
   - build
   - prepare
   - deploy_spare
-  - depoly_main
+  - deploy_main
   - cleanup
 Update Spare Docker Images:
   stage: prepare
