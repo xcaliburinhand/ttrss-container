@@ -1,0 +1,35 @@
+FROM php:fpm
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
+  git supervisor libmcrypt-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# enable the mcrypt module
+RUN docker-php-ext-install mcrypt \
+    && docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install mbstring \
+    && docker-php-ext-install mysqli \
+    && docker-php-ext-install pcntl
+
+# install ttrss and patch configuration
+WORKDIR /var/www
+RUN git clone --depth 1 https://tt-rss.org/gitlab/fox/tt-rss.git /var/www/html \
+    && apt-get purge -y --auto-remove git \
+    && cp html/config.php-dist html/config.php \
+    && chown www-data:www-data -R /var/www
+
+VOLUME /var/www/html
+
+EXPOSE 9000
+
+# complete path to ttrss
+ENV SELF_URL_PATH http://localhost
+
+# expose default database credentials via ENV in order to ease overwriting
+ENV DB_NAME ttrss
+ENV DB_USER ttrss
+ENV DB_PASS ttrss
+
+# always re-configure database with current ENV when RUNning container, then monitor all services
+ADD ttrss_files/configure-db.php /configure-db.php
+ADD ttrss_files/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+CMD php /configure-db.php && supervisord -c /etc/supervisor/conf.d/supervisord.conf

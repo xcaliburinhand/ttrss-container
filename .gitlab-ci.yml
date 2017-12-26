@@ -1,0 +1,57 @@
+before_script:
+  - env
+stages:
+  - build
+  - prepare
+  - deploy_spare
+  - deply_main
+  - cleanup
+Update Docker Images:
+  stage: prepare
+  tags:
+    - spare
+  script:
+    - docker pull nginx
+    - docker pull $CI_REGISTRY_IMAGE
+Update Docker Images:
+  stage: prepare
+  tags:
+    - main
+  script:
+    - docker pull nginx
+    - docker pull $CI_REGISTRY_IMAGE
+Build Container:
+  stage: build
+  environment: build
+  tags:
+    - build
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY_IMAGE
+    - docker build -t $CI_REGISTRY_IMAGE -f ${CI_PROJECT_DIR}/ttrss ${CI_PROJECT_DIR}
+    - docker push $CI_REGISTRY_IMAGE
+    - docker rmi $(docker images -f "dangling=true" -q)
+Deploy Containers:
+  stage: deploy_spare
+  tags:
+    - spare
+  script:
+    - docker stop ttrss
+    - docker rm -v ttrss
+    - docker stop nginx
+    - docker rm -v nginx
+    - /opt/muteweb/run_containers.sh
+Deploy Containers:
+  stage: deploy_main
+  tags:
+    - main
+  script:
+    - docker stop ttrss
+    - docker rm -v ttrss
+    - docker stop nginx
+    - docker rm -v nginx
+    - /opt/muteweb/run_containers.sh
+Remove Untagged:
+  allow_failure: true
+  stage: cleanup
+  script:
+    - docker rmi $(docker images -f "dangling=true" -q)
