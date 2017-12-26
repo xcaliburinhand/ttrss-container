@@ -3,20 +3,10 @@ before_script:
 stages:
   - build
   - prepare
-  - deploy_spare
   - deploy_main
   - cleanup
-Update Spare Docker Images:
+Update Docker Images:
   stage: prepare
-  tags:
-    - spare
-  script:
-    - docker pull nginx
-    - docker pull $CI_REGISTRY_IMAGE
-Update Main Docker Images:
-  stage: prepare
-  tags:
-    - main
   script:
     - docker pull nginx
     - docker pull $CI_REGISTRY_IMAGE
@@ -33,38 +23,17 @@ Build Container:
     - docker build -t $CI_REGISTRY_IMAGE -f /tmp/ttrss/ttrss /tmp/ttrss
     - docker push $CI_REGISTRY_IMAGE
     - docker rmi $(docker images -f "dangling=true" -q)
-Deploy Spare Containers:
-  stage: deploy_spare
-  tags:
-    - spare
-  script:
-    - docker stop ttrss
-    - docker rm -v ttrss
-    - docker stop nginx
-    - docker rm -v nginx
-    - /opt/muteweb/run_containers.sh
-Deploy Main Containers:
+Deploy Containers:
   stage: deploy_main
-  tags:
-    - main
   script:
     - docker stop ttrss
     - docker rm -v ttrss
     - docker stop nginx
     - docker rm -v nginx
     - /opt/muteweb/run_containers.sh
-Remove Main Untagged:
+Remove Untagged:
   allow_failure: true
   stage: cleanup
-  tags:
-    - main
-  script:
-    - docker rmi $(docker images -f "dangling=true" -q)
-Remove Spare Untagged:
-  allow_failure: true
-  stage: cleanup
-  tags:
-    - spare
   script:
     - docker rmi $(docker images -f "dangling=true" -q)
 
