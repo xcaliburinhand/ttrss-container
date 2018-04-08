@@ -2,6 +2,7 @@ before_script:
   - env
 stages:
   - build
+  - cleanup_build
   - prepare
   - deploy_main
   - cleanup
@@ -25,6 +26,16 @@ Build Container:
     - rm -rf /tmp/ttrss
     - docker rmi $CI_REGISTRY_IMAGE
     - docker rmi php:fpm
+cleanup_build_job:
+  stage: cleanup_build
+  environment: build
+  tags:
+    - build
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - rm -rf /tmp/ttrss
+  when: on_failure
 Deploy Containers:
   stage: deploy_main
   script:
