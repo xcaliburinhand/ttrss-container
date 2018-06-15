@@ -9,7 +9,7 @@ stages:
 Update Docker Images:
   stage: prepare
   script:
-    - docker pull nginx
+    - docker pull nginx:alpine
     - docker pull $CI_REGISTRY_IMAGE
 Build Container:
   stage: build
