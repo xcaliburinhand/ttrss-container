@@ -3,17 +3,10 @@ before_script:
 stages:
   - build
   - cleanup_build
-  - prepare
-  - deploy_main
   - cleanup
-Update Docker Images:
-  stage: prepare
-  script:
-    - docker pull nginx:alpine
-    - docker pull $CI_REGISTRY_IMAGE
+  - deploy
 Build Container:
   stage: build
-  environment: build
   tags:
     - build
   script:
@@ -25,28 +18,27 @@ Build Container:
     - docker push $CI_REGISTRY_IMAGE
     - rm -rf /tmp/ttrss
     - docker rmi $CI_REGISTRY_IMAGE
-    - docker rmi php:fpm
 cleanup_build_job:
-  stage: cleanup_build
-  environment: build
+  stage: cleanup
   tags:
     - build
   variables:
     GIT_STRATEGY: none
   script:
     - rm -rf /tmp/ttrss
-  when: on_failure
-Deploy Containers:
-  stage: deploy_main
-  script:
-    - docker stop ttrss
-    - docker rm -v ttrss
-    - docker stop nginx
-    - docker rm -v nginx
-    - /opt/muteweb/run_containers.sh
-Remove Untagged:
-  allow_failure: true
+  when: always
+cleanup:
   stage: cleanup
+  tags:
+    - build
+  variables:
+    GIT_STRATEGY: none
   script:
-    - docker rmi $(docker images -f "dangling=true" -q)
-
+    - docker system prune -a -f
+Deploy Containers:
+  stage: deploy
+  environment: production
+  tags:
+    - kubectl
+  script:
+    - /opt/kubectl/kubectl --kubeconfig=$KUBECONFIG delete pods -l app=ttrss -n $KUBE_NAMESPACE

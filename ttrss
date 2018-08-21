@@ -1,24 +1,19 @@
-FROM php:fpm
+FROM gitlab.internal:4567/dmount/php-fpm-nginx
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update && apt-get install -y \
-  supervisor libpq-dev && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apk add supervisor postgresql-dev --no-cache
 
 # enable the mcrypt module
 #RUN docker-php-ext-install mcrypt \
-RUN docker-php-ext-install pgsql \
-    && docker-php-ext-install pdo_pgsql \
+RUN docker-php-ext-install pdo_mysql \
+    && docker-php-ext-install pgsql pdo_pgsql \
     && docker-php-ext-install mbstring \
+    && docker-php-ext-install mysqli \
     && docker-php-ext-install pcntl
 
 # install ttrss and patch configuration
-WORKDIR /var/www
-ADD html /var/www/html
-RUN cp html/config.php-dist html/config.php \
-    && chown www-data:www-data -R /var/www
-
-VOLUME /var/www/html
-
-EXPOSE 9000
+WORKDIR /var/www/html/ttrss
+ADD --chown=www-data:www-data html /var/www/html/ttrss
+RUN cp config.php-dist config.php
 
 # complete path to ttrss
 ENV SELF_URL_PATH http://localhost
