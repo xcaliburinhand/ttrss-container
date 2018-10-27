@@ -17,6 +17,7 @@ RUN docker-php-ext-install pdo_mysql \
 # install ttrss and patch configuration
 WORKDIR /var/www/html/ttrss
 COPY --chown=82:82 --from=0 /tmp/ttrss/html /var/www/html/ttrss
+RUN chown -R 82:82 /var/www/html/ttrss
 RUN cp config.php-dist config.php
 
 # complete path to ttrss
