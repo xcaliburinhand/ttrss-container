@@ -1,4 +1,8 @@
-FROM gitlab.internal:4567/dmount/php-fpm-nginx
+FROM alpine/git as prep
+
+RUN git clone --depth 1 https://tt-rss.org/gitlab/fox/tt-rss.git /tmp/ttrss/html
+
+FROM containers.internal/php-fpm-nginx
 
 RUN apk add supervisor postgresql-dev --no-cache
 
@@ -12,7 +16,7 @@ RUN docker-php-ext-install pdo_mysql \
 
 # install ttrss and patch configuration
 WORKDIR /var/www/html/ttrss
-ADD --chown=www-data:www-data html /var/www/html/ttrss
+COPY --from=0 --chown=www-data:www-data /tmp/ttrss/html /var/www/html/ttrss
 RUN cp config.php-dist config.php
 
 # complete path to ttrss
