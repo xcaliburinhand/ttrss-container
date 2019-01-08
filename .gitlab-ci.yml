@@ -8,10 +8,10 @@ build:
   tags:
     - k8s
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: gcr.io/kaniko-project/executor:debug-v0.7.0
     entrypoint: [""]
   script:
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination containers.internal/$CI_PROJECT_NAME:latest
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --single-snapshot --destination containers.internal/$CI_PROJECT_NAME:latest
 Deploy Container:
   stage: deploy
   environment: production
