@@ -1,6 +1,6 @@
 FROM alpine/git as prep
 
-RUN git clone --depth 1 https://tt-rss.org/gitlab/fox/tt-rss.git /tmp/ttrss/html
+RUN git clone --depth 1 https://git.tt-rss.org/fox/tt-rss.git /tmp/ttrss/html
 
 FROM containers.internal/php-fpm-nginx
 
