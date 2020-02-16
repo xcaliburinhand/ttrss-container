@@ -29,7 +29,6 @@ spec:
       steps {
         git branch: 'master',
             url: 'https://github.com/xcaliburinhand/ttrss-container.git'
-        updateGithubCommitStatus name: 'build', state: 'pending'
         container(name: 'kaniko', shell: '/busybox/sh') {
             sh '''#!/busybox/sh
             /kaniko/executor -f `pwd`/Dockerfile -c `pwd` --skip-tls-verify --destination=containers.internal/ttrss:latest
