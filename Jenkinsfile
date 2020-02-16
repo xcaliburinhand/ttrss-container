@@ -1,37 +1,28 @@
 pipeline {
-  agent {
-    kubernetes {
-      label "kaniko"
-      yaml """
-kind: Pod
-metadata:
-  name: kaniko
-spec:
-  serviceAccount: jenkins
-  containers:
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:debug-v0.17.0
-    imagePullPolicy: Always
-    command:
-    - /busybox/cat
-    tty: true
-  - name: kubectl
-    image: containers.internal/kubectl:latest
-    imagePullPolicy: Always
-    command:
-    - sh
-    args:
-    - -c
-    - cat
-    tty: true
-"""
-    }
-  }
+  agent none
   triggers {
     cron('H 4 1,15 * *')
   }
   stages {
     stage('Build with Kaniko') {
+      agent {
+        kubernetes {
+          label "kaniko"
+          yaml """
+kind: Pod
+metadata:
+  name: kaniko
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug-v0.17.1
+    imagePullPolicy: Always
+    command:
+    - /busybox/cat
+    tty: true
+"""
+        }
+      }
       environment {
         PATH = "/busybox:/kaniko:$PATH"
       }
@@ -47,6 +38,28 @@ spec:
       }
     }
     stage('Deploy') {
+      agent {
+        kubernetes {
+          label "kaniko"
+          yaml """
+kind: Pod
+metadata:
+  name: kaniko
+spec:
+  serviceAccount: jenkins
+  containers:
+  - name: kubectl
+    image: containers.internal/kubectl:latest
+    imagePullPolicy: Always
+    command:
+    - sh
+    args:
+    - -c
+    - cat
+    tty: true
+"""
+        }
+      }
       steps {
         container(name: 'kubectl', shell: '/bin/sh') {
             sh '''#!/bin/sh
