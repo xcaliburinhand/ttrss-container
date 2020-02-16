@@ -4,7 +4,7 @@ RUN git clone --depth 1 https://git.tt-rss.org/fox/tt-rss.git /tmp/ttrss/html
 
 FROM containers.internal/php-fpm-nginx
 
-RUN apk add supervisor postgresql-dev icu-dev --no-cache
+RUN apk add supervisor postgresql-dev icu-dev oniguruma-dev --no-cache
 
 # enable the mcrypt module
 #RUN docker-php-ext-install mcrypt \
