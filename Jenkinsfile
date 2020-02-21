@@ -20,6 +20,13 @@ spec:
     command:
     - /busybox/cat
     tty: true
+  nodeSelector:
+    hardware: minipc
+  tolerations:
+  - key: "resource"
+    operator: "Equal"
+    value: "limited"
+    effect: "PreferNoSchedule"
 """
         }
       }
