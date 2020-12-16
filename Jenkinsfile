@@ -7,7 +7,6 @@ pipeline {
     stage('Build with Kaniko') {
       agent {
         kubernetes {
-          label "kaniko"
           yaml """
 kind: Pod
 metadata:
@@ -15,7 +14,7 @@ metadata:
 spec:
   containers:
   - name: kaniko
-    image: gcr.io/kaniko-project/executor:debug-v0.17.1
+    image: gcr.io/kaniko-project/executor:debug-v1.3.0
     imagePullPolicy: Always
     command:
     - /busybox/cat
@@ -46,11 +45,10 @@ spec:
     stage('Deploy') {
       agent {
         kubernetes {
-          label "kaniko"
           yaml """
 kind: Pod
 metadata:
-  name: kaniko
+  name: kubectl
 spec:
   serviceAccount: jenkins
   containers:

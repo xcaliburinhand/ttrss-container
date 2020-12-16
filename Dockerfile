@@ -8,12 +8,7 @@ RUN apk add supervisor postgresql-dev icu-dev oniguruma-dev --no-cache
 
 # enable the mcrypt module
 #RUN docker-php-ext-install mcrypt \
-RUN docker-php-ext-install pdo_mysql \
-    && docker-php-ext-install pgsql pdo_pgsql \
-    && docker-php-ext-install mbstring \
-    && docker-php-ext-install mysqli \
-    && docker-php-ext-install pcntl \
-    && docker-php-ext-install intl
+RUN docker-php-ext-install pdo_mysql pgsql pdo_pgsql mbstring mysqli pcntl intl
 
 # install ttrss and patch configuration
 WORKDIR /var/www/html/ttrss
