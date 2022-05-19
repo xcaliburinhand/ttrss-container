@@ -2,7 +2,7 @@ FROM alpine/git as prep
 
 RUN git clone --depth 1 https://git.tt-rss.org/fox/tt-rss.git /tmp/ttrss/html
 
-FROM containers.internal/php-fpm-nginx
+FROM containers.internal/php-fpm-nginx:7
 
 RUN apk add supervisor postgresql-dev icu-dev oniguruma-dev --no-cache
 
@@ -23,6 +23,8 @@ ENV SELF_URL_PATH http://localhost
 ENV DB_NAME ttrss
 ENV DB_USER ttrss
 ENV DB_PASS ttrss
+
+ENV TTRSS_PHP_EXECUTABLE /usr/local/bin/php
 
 # always re-configure database with current ENV when RUNning container, then monitor all services
 ADD ttrss_files/configure-db.php /configure-db.php

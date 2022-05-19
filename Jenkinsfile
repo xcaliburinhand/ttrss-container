@@ -7,26 +7,7 @@ pipeline {
     stage('Build with Kaniko') {
       agent {
         kubernetes {
-          yaml """
-kind: Pod
-metadata:
-  name: kaniko
-spec:
-  containers:
-  - name: kaniko
-    image: gcr.io/kaniko-project/executor:debug-v1.3.0
-    imagePullPolicy: Always
-    command:
-    - /busybox/cat
-    tty: true
-  nodeSelector:
-    hardware: minipc
-  tolerations:
-  - key: "resource"
-    operator: "Equal"
-    value: "limited"
-    effect: "PreferNoSchedule"
-"""
+          inheritFrom "kaniko"
         }
       }
       environment {
