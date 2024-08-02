@@ -2,7 +2,7 @@ FROM alpine/git as prep
 
 RUN git clone --depth 1 https://git.tt-rss.org/fox/tt-rss.git /tmp/ttrss/html
 
-FROM containers.internal/php-fpm-nginx:7
+FROM containers.internal/php-fpm-nginx:8
 
 RUN apk add supervisor postgresql-dev icu-dev oniguruma-dev --no-cache
 
