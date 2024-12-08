@@ -18,7 +18,9 @@ pipeline {
             url: 'https://github.com/xcaliburinhand/ttrss-container.git'
         container(name: 'kaniko', shell: '/busybox/sh') {
             sh '''#!/busybox/sh
-            /kaniko/executor -f `pwd`/Dockerfile -c `pwd` --skip-tls-verify --destination=containers.internal/ttrss:latest
+            /kaniko/executor -f `pwd`/Dockerfile -c `pwd` --skip-tls-verify \
+              --build-arg "BASE_IMAGE=containers.internal/php-fpm-nginx:8.3" \
+              --destination=containers.internal/ttrss:latest
            '''
         }
       }
