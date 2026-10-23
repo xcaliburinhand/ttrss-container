@@ -1,4 +1,5 @@
-ARG BASE_IMAGE=containers.internal/php-fpm-nginx:8.3
+# php-fpm-nginx image to build on, e.g. --build-arg BASE_IMAGE=<registry>/php-fpm-nginx:8.3 (required)
+ARG BASE_IMAGE
 
 FROM alpine/git as prep
 

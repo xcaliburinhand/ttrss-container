@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  # Twice-monthly rebuild to pick up upstream tt-rss and base image updates (Jenkins ran on the 1st and 15th).
+  schedule:
+    - cron: '23 4 1,15 * *'
+
+# A newer push to the same branch/PR supersedes a run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+# This repository is public, so nothing environment-specific lives in the file. Set these repository variables:
+#   RUNNER           runs-on label of the self-hosted runner
+#   IMAGE            destination repository for the image, without a tag
+#   BASE_IMAGE       php-fpm-nginx image the Dockerfile builds FROM
+#   KUBECTL_IMAGE    image with kubectl, for the deploy job
+#   TTRSS_NAMESPACE  namespace whose ttrss pods are restarted on deploy
+# Optional: KANIKO_IMAGE / CRANE_IMAGE (mirrors), DEPLOY=false to pause deploys.
+#
+# The runner is self-hosted, so pull requests from forks must never run on it: the PR build is limited to
+# same-repository branches. Also set Settings > Actions > "Require approval for all outside collaborators".
+jobs:
+  image:
+    name: Image (Kaniko)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ vars.RUNNER }}
+    # Kaniko needs no Docker daemon. Its image is busybox-based, so JavaScript actions (actions/checkout)
+    # cannot run in it: no checkout step, Kaniko fetches the commit itself via a git build context.
+    container:
+      image: ${{ vars.KANIKO_IMAGE || 'gcr.io/kaniko-project/executor:v1.23.2-debug' }}
+    env:
+      GIT_USERNAME: x-access-token
+      GIT_PASSWORD: ${{ github.token }}
+      CONTEXT: git://github.com/${{ github.repository }}.git#${{ github.ref }}#${{ github.sha }}
+    steps:
+      # Pull requests: build only, to prove the Dockerfile works.
+      - name: Build (no push)
+        if: github.event_name == 'pull_request'
+        shell: sh -e {0}
+        run: /kaniko/executor --context "$CONTEXT" --dockerfile Dockerfile --build-arg "BASE_IMAGE=${{ vars.BASE_IMAGE }}" --no-push
+
+      # Push and scheduled rebuild: push under the per-run tag only; latest moves after the tests pass.
+      - name: Build and push candidate
+        if: github.event_name != 'pull_request'
+        shell: sh -e {0}
+        run: |
+          /kaniko/executor --context "$CONTEXT" --dockerfile Dockerfile --skip-tls-verify \
+            --build-arg "BASE_IMAGE=${{ vars.BASE_IMAGE }}" \
+            --destination "${{ vars.IMAGE }}:${{ github.run_number }}"
+
+  # The runners have no Docker daemon, so the candidate image is the job container and the checks run inside it.
+  test:
+    name: Smoke test
+    if: github.event_name != 'pull_request'
+    needs: [image]
+    runs-on: ${{ vars.RUNNER }}
+    container:
+      image: ${{ vars.IMAGE }}:${{ github.run_number }}
+    steps:
+      - name: Required PHP extensions are loaded
+        shell: sh -e {0}
+        run: |
+          for ext in pdo_mysql pgsql pdo_pgsql mbstring mysqli pcntl intl; do
+            php -m | grep -qix "$ext" || { echo "missing php extension: $ext"; exit 1; }
+          done
+      - name: tt-rss is installed and its config parses
+        shell: sh -e {0}
+        run: |
+          test -f /var/www/html/ttrss/index.php
+          php -l /var/www/html/ttrss/config.php
+      - name: php-fpm and nginx config
+        shell: sh -e {0}
+        run: |
+          php-fpm -t
+          nginx -t
+      - name: supervisor config is present
+        shell: sh -e {0}
+        run: supervisord --version && test -f /etc/supervisor/conf.d/supervisord.conf
+
+  # Replaces the :latest destination Jenkins pushed with the build. Retagging is a registry-side manifest copy,
+  # so the image that was tested is exactly the image that gets promoted.
+  promote:
+    name: Promote (latest)
+    needs: [test]
+    runs-on: ${{ vars.RUNNER }}
+    container:
+      image: ${{ vars.CRANE_IMAGE || 'gcr.io/go-containerregistry/crane:debug' }}
+    steps:
+      - name: Retag
+        shell: sh -e {0}
+        run: crane tag --insecure "${{ vars.IMAGE }}:${{ github.run_number }}" latest
+
+  # Replaces Jenkins' "Deploy" stage: deleting the pods makes the Deployment recreate them from :latest.
+  # Job pods of this runner run as a service account that needs get/list/delete on pods in the namespace.
+  deploy:
+    name: Deploy (restart pods)
+    if: vars.DEPLOY != 'false'
+    needs: [promote]
+    runs-on: ${{ vars.RUNNER }}
+    container:
+      image: ${{ vars.KUBECTL_IMAGE }}
+    steps:
+      - name: Restart ttrss pods
+        shell: sh -e {0}
+        run: kubectl delete pods -l app=ttrss -n "${{ vars.TTRSS_NAMESPACE }}"
