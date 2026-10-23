@@ -109,4 +109,6 @@ jobs:
     steps:
       - name: Restart ttrss pods
         shell: sh -e {0}
-        run: kubectl delete pods -l app=ttrss -n "${{ vars.TTRSS_NAMESPACE }}"
+        run: |
+          kubectl -n "${{ vars.TTRSS_NAMESPACE }}" rollout restart deploy/ttrss
+          kubectl -n "${{ vars.TTRSS_NAMESPACE }}" rollout status deploy/ttrss --timeout=180s
